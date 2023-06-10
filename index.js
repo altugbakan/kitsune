@@ -1,5 +1,9 @@
 require("dotenv").config();
-const { AAVE_WETH_GATEWAY, AaveWEthGatewayAbi } = require("./constants.js");
+const {
+  AAVE_WETH_GATEWAY,
+  AaveWEthGatewayAbi,
+  SYSTEM_PROMPT,
+} = require("./constants.js");
 const express = require("express");
 const cors = require("cors");
 const { ethers } = require("ethers");
@@ -7,15 +11,6 @@ const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
 const port = 3000;
-const systemPrompt = `You are a program that returns the following JSON schema which you will create using the user's input. Your whole response should be a valid JSON. Do not print out any message, only the JSON without backticks. Do not give any warnings, notes or errors, only return the JSON.
-
-{
-  "protocol": "aave" | "yearn" | null,
-  "amount": number | "all",
-  "type": "deposit" | "withdraw" | "send",
-  "address": "string" | null,
-  "response": null | string,
-}`;
 
 const configuration = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -28,7 +23,7 @@ app.get("/", async (req, res) => {
   const result = await openai.createChatCompletion({
     model: "gpt-3.5-turbo",
     messages: [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: req.query.input },
     ],
     temperature: 0,
@@ -40,7 +35,6 @@ const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
 const ethProvider = new ethers.InfuraProvider(ethers.Network.Mainnet);
-const ethWallet = new ethers.Wallet(process.env.PRIVATE_KEY, ethProvider);
 
 app.get("/balance", async (_req, res) => {
   const balance = await provider.getBalance(wallet.address);
